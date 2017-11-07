@@ -13,6 +13,17 @@ int FindFirstChangeNotification(
 	unsigned long  dwNotifyFilter
 ) 
 
+**Limitation: Currently only FILE_NOTIFY_CHANGE_FILE_NAME are supported as filter (dwNotifyFilter)**
+
+# WaitForSingleObject
+unsigned long WaitForSingleObject(
+	int hHandle,
+	unsigned long  dwMilliseconds
+)
+
+**Limitation: Currently the parameter dwMilliseconds are second based, like (2000 will be 2 seconds, 400 will be 0 zero), also the return is limited to WAIT_OBJECT_0 or WAIT_TIMEOUT**
+
+
 
 
 
