@@ -23,7 +23,13 @@ unsigned long WaitForSingleObject(
 
 **Limitation: Currently the parameter dwMilliseconds are second based, like (2000 will be 2 seconds, 400 will be 0 zero), also the return is limited to WAIT_OBJECT_0 or WAIT_TIMEOUT**
 
+# How to use?
 
+Just include the file like:
+
+`#include "FileMonitor.hpp"`
+
+And don't forget to link against pthread (-lpthread)
 
 
 
