@@ -1,3 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
 project (FileMonTest)
+find_package(Threads)
 add_executable(FileMonTest TestFileMonitor.cpp)
+target_link_libraries( FileMonTest ${CMAKE_THREAD_LIBS_INIT} )
