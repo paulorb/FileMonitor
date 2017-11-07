@@ -10,6 +10,7 @@
 #include <sys/inotify.h>
 #include <map> 
 #include <poll.h>
+#include <errno.h>
 
 #define WAIT_OBJECT_0 0x0
 #define FILE_NOTIFY_CHANGE_FILE_NAME    0x00000001   
