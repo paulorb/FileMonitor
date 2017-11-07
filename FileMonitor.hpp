@@ -1,3 +1,5 @@
+//PauloRB - 2012 - File Monitor
+
 #ifndef FILE_MONITOR_HPP
 #define FILE_MONITOR_HPP
 
