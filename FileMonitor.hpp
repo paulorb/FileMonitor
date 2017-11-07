@@ -39,13 +39,11 @@ struct paramThread {
 };
 
 
-pthread_cond_t g_cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t g_mutex;
-pthread_t g_tid;
 int g_id_Counter = 1;
-std::map<int,pthread_mutex_t *> g_map_IDtoMutex;
-std::map<int,pthread_t *> g_map_IDtoThread;
-std::map<int,pthread_cond_t *> g_map_IDtoCond;
+std::map< int,pthread_mutex_t *> g_map_IDtoMutex;
+std::map< int,pthread_t *> g_map_IDtoThread;
+std::map< int,pthread_cond_t *> g_map_IDtoCond;
+std::map< int,std::pair<int,int > > g_map_IDtofdwd;
 
 
 
@@ -65,6 +63,7 @@ void* ThreadFileMon(void *arg)
 		if (ret < 0) {
 			printf("\failed poll");
 			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+			 pthread_testcancel();
 			sleep(1); //Slice of time that the thread becomes cancelable
 			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		}
@@ -72,6 +71,7 @@ void* ThreadFileMon(void *arg)
 			// Timeout with no events, move on.
 			printf("\nTimeout poll");
 			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+			 pthread_testcancel();
 			sleep(1); //Slice of time that the thread becomes cancelable
 			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		}
@@ -79,7 +79,6 @@ void* ThreadFileMon(void *arg)
 			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 			i = 0;
 			int lenght = read(th_params->fd, buffer, 1024);
-			printf("\nRead lenght=%d", lenght);
 			if(lenght != -1)
 			while (i < lenght) {
 				printf("\nThreadFileMon while");
@@ -177,6 +176,7 @@ int FindFirstChangeNotification(
 
 	pThread.fd = fd;
 	pThread.wd = wd;
+	g_map_IDtofdwd[g_id_Counter] = std::make_pair(fd,wd);
 
 	pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 
@@ -189,11 +189,28 @@ int FindFirstChangeNotification(
 
 	pthread_t * tid = (pthread_t *)malloc(sizeof(pthread_t));
 
-	err = pthread_create(tid, NULL, &ThreadFileMon, &pThread);
+	pthread_attr_t        pta;
+	err = pthread_attr_init(&pta);
 	if (err != 0) {
-		printf("\npthread_create INVALID_HANDLE_VALUE");
+		printf("\pthread_attr_init ERROR %d",errno);
 		return INVALID_HANDLE_VALUE;
 	}
+	
+	err = pthread_attr_setdetachstate(&pta, PTHREAD_CREATE_DETACHED);
+	if (err != 0) {
+		printf("\pthread_attr_setdetachstate ERROR %d",errno);
+		return INVALID_HANDLE_VALUE;
+	}
+	
+	
+	
+	err = pthread_create(tid, &pta, &ThreadFileMon, &pThread);
+	if (err != 0) {
+		printf("\npthread_create ERROR %d",errno);
+		return INVALID_HANDLE_VALUE;
+	}
+	
+	
 	pThread.id = *tid;
 	
 	pthread_cond_t *cond = (pthread_cond_t *)malloc(sizeof(pthread_cond_t));
@@ -248,11 +265,39 @@ int FindCloseChangeNotification(
 	int hChangeHandle
 ) {
 	printf("\nFindCloseChangeNotification");
-	pthread_cond_destroy(&g_cond);
-	pthread_mutex_destroy(&g_mutex);
-	pthread_cancel(g_tid);
+	//TODO Stop the watch and close  inotify_rm_watch, close
+
+	pthread_cond_destroy(g_map_IDtoCond[hChangeHandle]);
+	pthread_mutex_destroy(g_map_IDtoMutex[hChangeHandle]);
+	pthread_cancel(*g_map_IDtoThread[hChangeHandle]);
 	
-	//TODO clear map and free all pointers
+	
+std::map< int,pthread_mutex_t *>::iterator iteratorMut = g_map_IDtoMutex.find(hChangeHandle);
+  if(iteratorMut != g_map_IDtoMutex.end() ){
+	  free(g_map_IDtoMutex[hChangeHandle]);
+	  g_map_IDtoMutex.erase(iteratorMut);
+  }
+  std::map< int,pthread_t *>::iterator iteratorT = g_map_IDtoThread.find(hChangeHandle);
+   if( iteratorT != g_map_IDtoThread.end() ){
+	  free(g_map_IDtoThread[hChangeHandle]);
+	  g_map_IDtoThread.erase(iteratorT);
+   }
+  std::map< int,pthread_cond_t *>::iterator iteratorC= g_map_IDtoCond.find(hChangeHandle);
+   if( iteratorC != g_map_IDtoCond.end() ){
+	  free(g_map_IDtoCond[hChangeHandle]);
+	  g_map_IDtoCond.erase(iteratorC);
+   }
+	
+  std::map< int,std::pair< int,int > >::iterator iteratorFDWD = g_map_IDtofdwd.find(hChangeHandle);
+  if(iteratorFDWD != g_map_IDtofdwd.end()){
+	  (void)inotify_rm_watch(iteratorFDWD->second.first, iteratorFDWD->second.second);
+	(void)close(iteratorFDWD->second.first);
+	g_map_IDtofdwd.erase(iteratorFDWD);
+  }
+
+	
+	
+	
 	return 0;
 }
 
