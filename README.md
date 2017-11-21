@@ -36,6 +36,6 @@ There are two version the version on the root is based on pthread, the version i
 
 `#include "FileMonitor.hpp"`
 
-Remember it depends on boost thread and system, take a look at the CMakeLists.txt to see an example.
+Remember it depends on boost thread, take a look at the CMakeLists.txt to see an example.
 
 
