@@ -31,6 +31,11 @@ Just include the file like:
 
 And don't forget to link against pthread (-lpthread)
 
+# Other versions (Boost based)
+There are two version the version on the root is based on pthread, the version inside of Other Versions folder is based on boost (it depends on boost) to use the boost one just get the FileMonitor.hpp from the "Other Versions" and include it in your code file like
 
+`#include "FileMonitor.hpp"`
+
+Remember it depends on boost thread and system, take a look at the CMakeLists.txt to see an example.
 
 
